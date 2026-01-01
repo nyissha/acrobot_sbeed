@@ -1,0 +1,9 @@
+.vscode/
+.conda/
+__pycache__/
+Acrobot-v1_tb_log/
+baseline_data/
+lunarlander/
+others/
+weights/
+*.png
