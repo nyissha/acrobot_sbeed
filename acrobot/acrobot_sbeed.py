@@ -27,8 +27,8 @@ def parse_args():
     
     # SBEED Hyperparameters
     parser.add_argument("--lr", type=float, default=1e-4)
-    parser.add_argument("--eta", type=float, default=0.05)
-    parser.add_argument("--lam", type=float, default=0.01)
+    parser.add_argument("--eta", type=float, default=0.01)
+    parser.add_argument("--lam", type=float, default=0.004)
     parser.add_argument("--gamma", type=float, default=0.99)
     parser.add_argument("--kl_beta", type=float, default=0.1, help="KL penalty coefficient (inverted)")
     parser.add_argument("--grad_clip", type=float, default=10.0)
@@ -186,16 +186,17 @@ class OfflineSBEED:
             adv = (adv - adv.mean()) / (adv.std() + 1e-8)
 
         pg_loss = -2.0 * (self.lam * adv * logp_new).mean()
-        
-        kl = kl_categorical(dist_new, dist_old).mean()
-        loss_pi = pg_loss + (1.0 / self.kl_beta) * kl
+        loss_pi = pg_loss
+
+        #kl = kl_categorical(dist_new, dist_old).mean()
+        #loss_pi = pg_loss + (1.0 / self.kl_beta) * kl
 
         self.opt_pi.zero_grad()
         loss_pi.backward()
         utils.clip_grad_norm_(self.pi.parameters(), self.grad_clip)
         self.opt_pi.step()
 
-        return {"v": loss_v.item(), "kl": kl.item(), "ent": dist_new.entropy().mean().item()}
+        return {"v": loss_v.item(), "ent": dist_new.entropy().mean().item()}
 
 # ===================== 4. Evaluation & Visualization =====================
 @torch.no_grad()
@@ -279,7 +280,7 @@ def main():
             rets.append(ret)
             
             elapsed = (time.time() - start_time) / 60
-            print(f"Step {i:5d} | Return: {ret:6.1f} | V_Loss: {logs['v']:.4f} | KL: {logs['kl']:.4f} | Ent: {logs['ent']:.3f} | Time: {elapsed:.1f}m")
+            print(f"Step {i:5d} | Return: {ret:6.1f} | V_Loss: {logs['v']:.4f} | Ent: {logs['ent']:.3f} | Time: {elapsed:.1f}m")
 
     visualize_results(steps, rets, args)
     env.close()
